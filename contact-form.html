@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Auto-Save Form — Lesson 13.3</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 500px; margin: 2rem auto; padding: 0 1rem; }
+  label { display: block; margin-top: 1rem; }
+  input, textarea { width: 100%; padding: 0.4rem; margin-top: 0.25rem; box-sizing: border-box; }
+</style>
+</head>
+<body>
+  <h1>Contact Us</h1>
+  <p>Your draft auto-saves as you type (sessionStorage) — refresh and it's still here. Close the tab and it's gone.</p>
+  <form id="contact-form">
+    <label>Name <input type="text" name="name"></label>
+    <label>Email <input type="email" name="email"></label>
+    <label>Message <textarea name="message" rows="4"></textarea></label>
+    <button type="submit">Send</button>
+  </form>
+
+  <script>
+    const form = document.getElementById("contact-form");
+    const inputs = form.querySelectorAll("input, textarea");
+
+    inputs.forEach((input) => {
+      // Restore any draft saved earlier this session
+      const saved = sessionStorage.getItem(`form_${input.name}`);
+      if (saved) input.value = saved;
+
+      // Save on every keystroke
+      input.addEventListener("input", () => {
+        sessionStorage.setItem(`form_${input.name}`, input.value);
+      });
+    });
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      inputs.forEach((input) => sessionStorage.removeItem(`form_${input.name}`));
+      form.reset();
+      alert("Sent! (demo only — no backend) Draft cleared from sessionStorage.");
+    });
+  </script>
+</body>
+</html>

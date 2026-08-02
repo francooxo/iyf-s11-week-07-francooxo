@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Shopping Cart — Lesson 13.4</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 700px; margin: 2rem auto; padding: 0 1rem; }
+  header { display: flex; justify-content: space-between; align-items: center; }
+  .product, .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #eee; }
+  button { cursor: pointer; }
+  #cart-count { background: #333; color: #fff; border-radius: 999px; padding: 0.1rem 0.6rem; font-size: 0.85rem; }
+  input[type="number"] { width: 3rem; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Shop</h1>
+    <div>Cart: <span id="cart-count">0</span></div>
+  </header>
+
+  <section>
+    <h2>Products</h2>
+    <div id="product-list"></div>
+  </section>
+
+  <section>
+    <h2>Cart</h2>
+    <div id="cart-list"></div>
+    <p>Total: $<span id="cart-total">0.00</span></p>
+    <button id="clear-cart">Clear Cart</button>
+  </section>
+
+  <script>
+    // Centralized state (Task 13.4 pattern)
+    const STORAGE_KEY = "shopping_cart_state";
+
+    const state = {
+      products: [
+        { id: 1, name: "Laptop", price: 999 },
+        { id: 2, name: "Phone", price: 699 },
+        { id: 3, name: "Headphones", price: 199 },
+      ],
+      cart: loadCart(), // { productId, quantity }[]
+    };
+
+    function loadCart() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    }
+
+    function saveCart() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.cart));
+    }
+
+    function addToCart(productId) {
+      const existing = state.cart.find((item) => item.productId === productId);
+      if (existing) {
+        existing.quantity++;
+      } else {
+        state.cart.push({ productId, quantity: 1 });
+      }
+      saveCart();
+      render();
+    }
+
+    function updateQuantity(productId, quantity) {
+      quantity = Number(quantity);
+      if (quantity <= 0) {
+        removeFromCart(productId);
+        return;
+      }
+      const item = state.cart.find((item) => item.productId === productId);
+      if (item) item.quantity = quantity;
+      saveCart();
+      render();
+    }
+
+    function removeFromCart(productId) {
+      state.cart = state.cart.filter((item) => item.productId !== productId);
+      saveCart();
+      render();
+    }
+
+    function clearCart() {
+      state.cart = [];
+      saveCart();
+      render();
+    }
+
+    function getCartTotal() {
+      return state.cart.reduce((total, item) => {
+        const product = state.products.find((p) => p.id === item.productId);
+        return total + product.price * item.quantity;
+      }, 0);
+    }
+
+    function getCartCount() {
+      return state.cart.reduce((count, item) => count + item.quantity, 0);
+    }
+
+    function render() {
+      const productList = document.getElementById("product-list");
+      productList.innerHTML = "";
+      state.products.forEach((product) => {
+        const div = document.createElement("div");
+        div.className = "product";
+        div.innerHTML = `
+          <span>${product.name} — $${product.price}</span>
+          <button data-id="${product.id}" class="add-btn">Add to Cart</button>
+        `;
+        productList.appendChild(div);
+      });
+
+      const cartList = document.getElementById("cart-list");
+      cartList.innerHTML = state.cart.length === 0 ? "<p>Cart is empty.</p>" : "";
+      state.cart.forEach((item) => {
+        const product = state.products.find((p) => p.id === item.productId);
+        const div = document.createElement("div");
+        div.className = "cart-item";
+        div.innerHTML = `
+          <span>${product.name}</span>
+          <input type="number" min="0" value="${item.quantity}" data-id="${item.productId}" class="qty-input">
+          <button data-id="${item.productId}" class="remove-btn">Remove</button>
+        `;
+        cartList.appendChild(div);
+      });
+
+      document.getElementById("cart-total").textContent = getCartTotal().toFixed(2);
+      document.getElementById("cart-count").textContent = getCartCount();
+    }
+
+    document.getElementById("product-list").addEventListener("click", (e) => {
+      if (e.target.classList.contains("add-btn")) addToCart(Number(e.target.dataset.id));
+    });
+
+    document.getElementById("cart-list").addEventListener("click", (e) => {
+      if (e.target.classList.contains("remove-btn")) removeFromCart(Number(e.target.dataset.id));
+    });
+
+    document.getElementById("cart-list").addEventListener("change", (e) => {
+      if (e.target.classList.contains("qty-input")) updateQuantity(Number(e.target.dataset.id), e.target.value);
+    });
+
+    document.getElementById("clear-cart").addEventListener("click", clearCart);
+
+    render();
+  </script>
+</body>
+</html>
